@@ -1,0 +1,39 @@
+{
+  "code": 200,
+  "data": [
+    {
+      "airflow": {
+        "name": "airflow",
+        "cpuCost": 12.5,
+        "ramCost": 8.2,
+        "pvCost": 3.1,
+        "networkCost": 0.4,
+        "totalCost": 24.2
+      },
+      "infra-service=rudderstack": {
+        "name": "infra-service=rudderstack",
+        "cpuCost": 40.0,
+        "ramCost": 30.0,
+        "pvCost": 10.0,
+        "networkCost": 2.0,
+        "totalCost": 82.0
+      },
+      "redash": {
+        "name": "redash",
+        "cpuCost": 4.0,
+        "ramCost": 3.0,
+        "pvCost": 1.0,
+        "networkCost": 0.2,
+        "totalCost": 8.2
+      },
+      "__idle__": {
+        "name": "__idle__",
+        "cpuCost": 100.0,
+        "ramCost": 100.0,
+        "pvCost": 0.0,
+        "networkCost": 0.0,
+        "totalCost": 200.0
+      }
+    }
+  ]
+}

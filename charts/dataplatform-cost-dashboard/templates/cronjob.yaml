@@ -1,0 +1,44 @@
+{{- if .Values.cronjob.enabled -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "dataplatform-cost-dashboard.fullname" . }}-collect
+  labels:
+    {{- include "dataplatform-cost-dashboard.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.cronjob.schedule | quote }}
+  successfulJobsHistoryLimit: {{ .Values.cronjob.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.cronjob.failedJobsHistoryLimit }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "dataplatform-cost-dashboard.selectorLabels" . | nindent 12 }}
+            job: collect
+        spec:
+          serviceAccountName: {{ include "dataplatform-cost-dashboard.serviceAccountName" . }}
+          restartPolicy: OnFailure
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: collect
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              args:
+                {{- toYaml .Values.cronjob.args | nindent 16 }}
+              envFrom:
+                - configMapRef:
+                    name: {{ include "dataplatform-cost-dashboard.fullname" . }}
+                - secretRef:
+                    name: {{ .Values.existingSecret }}
+              resources:
+                {{- toYaml .Values.resources | nindent 16 }}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

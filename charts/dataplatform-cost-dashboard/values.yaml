@@ -1,0 +1,88 @@
+replicaCount: 1
+
+image:
+  repository: 694468762768.dkr.ecr.ap-south-1.amazonaws.com/prod-data-platform-shared-services
+  tag: dataplatform-cost-dashboard-0.1.0
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+labels:
+  infra-env: prod
+  infra-product: dataplatform
+  infra-service: dataplatform-cost-dashboard
+
+podAnnotations: {}
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: dataplatform-cost.khatabook.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Existing Postgres; chart does not create a database.
+existingSecret: dataplatform-cost-dashboard
+# Secret keys expected:
+#   DATABASE_URL
+#   SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_PASSWORD, SNOWFLAKE_WAREHOUSE
+#   REDASH_DATABASE_URL
+#   TABLEAU_SERVER_URL, TABLEAU_SITE, TABLEAU_PAT_NAME, TABLEAU_PAT_SECRET
+#   AIRFLOW_API_URL, AIRFLOW_API_USER, AIRFLOW_API_PASSWORD
+# Optional AWS credentials if IRSA is not used.
+
+config:
+  SNOWFLAKE_ROLE: ACCOUNTADMIN
+  SNOWFLAKE_CREDIT_USD: "3.0"
+  KUBECOST_BASE_URL: http://kubecost-cost-analyzer.kubecost:9090
+  KUBECOST_SERVICES: airflow,rudderstack,redash
+  AWS_REGION: ap-south-1
+  ATHENA_DATABASE: athenacurcfn_prod_platform_kubecost
+  ATHENA_TABLE: prod_platform_kubecost
+  ATHENA_OUTPUT: s3://prod-platform-kubecost/athena-results/
+  RUDDERSTACK_S3_BUCKETS: ""
+  PIPELINE_DAGS: '[{"dag_id":"rudderstack_s3_snowflake","destination":"snowflake"},{"dag_id":"clevertap_set_user_properties","destination":"clevertap"}]'
+
+cronjob:
+  enabled: true
+  schedule: "30 1 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  args:
+    - python
+    - -m
+    - app.collect
+    - --source
+    - all
+
+migration:
+  enabled: true
