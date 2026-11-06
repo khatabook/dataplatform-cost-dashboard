@@ -23,8 +23,11 @@ COPY app ./app
 COPY scripts ./scripts
 COPY --from=frontend /frontend/dist ./frontend/dist
 
+RUN chmod +x /app/scripts/entrypoint.sh
+
 ENV STATIC_DIR=frontend/dist
 ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8000
+ENTRYPOINT ["/app/scripts/entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

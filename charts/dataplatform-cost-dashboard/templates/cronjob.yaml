@@ -17,6 +17,8 @@ spec:
           labels:
             {{- include "dataplatform-cost-dashboard.selectorLabels" . | nindent 12 }}
             job: collect
+          annotations:
+            {{- include "dataplatform-cost-dashboard.vaultAnnotations" . | nindent 12 }}
         spec:
           serviceAccountName: {{ include "dataplatform-cost-dashboard.serviceAccountName" . }}
           restartPolicy: OnFailure
@@ -28,13 +30,12 @@ spec:
             - name: collect
               image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
               imagePullPolicy: {{ .Values.image.pullPolicy }}
+              # ENTRYPOINT loads Vault secrets; args run the collector.
               args:
                 {{- toYaml .Values.cronjob.args | nindent 16 }}
               envFrom:
                 - configMapRef:
                     name: {{ include "dataplatform-cost-dashboard.fullname" . }}
-                - secretRef:
-                    name: {{ .Values.existingSecret }}
               resources:
                 {{- toYaml .Values.resources | nindent 16 }}
           {{- with .Values.nodeSelector }}

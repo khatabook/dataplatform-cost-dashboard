@@ -12,6 +12,7 @@ fullnameOverride: ""
 
 serviceAccount:
   create: true
+  # Annotate with IRSA role if Athena/S3 need AWS credentials without static keys in Vault.
   annotations: {}
   name: ""
 
@@ -21,6 +22,19 @@ labels:
   infra-service: dataplatform-cost-dashboard
 
 podAnnotations: {}
+
+# Credentials come from Vault Agent Injector (not a Kubernetes Secret).
+# Store KEY=VALUE fields under the KV path below. The container entrypoint
+# exports them before starting the API / collector / migrate.
+vault:
+  enabled: true
+  namespace: prod-dataplatform
+  secretName: dataplatform-cost-dashboard
+  # Defaults:
+  #   path = private/data/<namespace>/<secretName>
+  #   role = <namespace>-<secretName>
+  path: ""
+  role: ""
 
 resources:
   requests:
@@ -50,16 +64,7 @@ ingress:
           pathType: Prefix
   tls: []
 
-# Existing Postgres; chart does not create a database.
-existingSecret: dataplatform-cost-dashboard
-# Secret keys expected:
-#   DATABASE_URL
-#   SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_PASSWORD, SNOWFLAKE_WAREHOUSE
-#   REDASH_DATABASE_URL
-#   TABLEAU_SERVER_URL, TABLEAU_SITE, TABLEAU_PAT_NAME, TABLEAU_PAT_SECRET
-#   AIRFLOW_API_URL, AIRFLOW_API_USER, AIRFLOW_API_PASSWORD
-# Optional AWS credentials if IRSA is not used.
-
+# Non-secret config only. Secrets (DATABASE_URL, Snowflake, Tableau, etc.) live in Vault.
 config:
   SNOWFLAKE_ROLE: ACCOUNTADMIN
   SNOWFLAKE_CREDIT_USD: "3.0"

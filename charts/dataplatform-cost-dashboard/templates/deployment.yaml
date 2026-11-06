@@ -16,10 +16,8 @@ spec:
         {{- range $k, $v := .Values.labels }}
         {{ $k }}: {{ $v | quote }}
         {{- end }}
-      {{- with .Values.podAnnotations }}
       annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- include "dataplatform-cost-dashboard.vaultAnnotations" . | nindent 8 }}
     spec:
       serviceAccountName: {{ include "dataplatform-cost-dashboard.serviceAccountName" . }}
       {{- with .Values.imagePullSecrets }}
@@ -31,12 +29,12 @@ spec:
         - name: migrate
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["alembic", "upgrade", "head"]
+          # Use entrypoint so Vault-injected secrets are exported before alembic.
+          command: ["/app/scripts/entrypoint.sh"]
+          args: ["alembic", "upgrade", "head"]
           envFrom:
             - configMapRef:
                 name: {{ include "dataplatform-cost-dashboard.fullname" . }}
-            - secretRef:
-                name: {{ .Values.existingSecret }}
       {{- end }}
       containers:
         - name: api
@@ -48,8 +46,6 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "dataplatform-cost-dashboard.fullname" . }}
-            - secretRef:
-                name: {{ .Values.existingSecret }}
           readinessProbe:
             httpGet:
               path: /api/health
